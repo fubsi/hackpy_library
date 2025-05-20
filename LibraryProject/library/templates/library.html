@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}
+Overview - Library (EA)
+{% endblock %}
+
+{% block content %}
+<div class="container bg-dark rounded text-white my-5 p-5">
+    <h1>Bibliothek</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Titel</th>
+                <th scope="col">Autor</th>
+                <th scope="col">Genre</th>
+                <th scope="col">Jahr</th>
+                <th scope="col">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            <tr>
+                <td>{{ book[0] }}</td>
+                <td>{{ book[1] }}</td>
+                <td>{{ book[2] }}</td>
+                <td>{{ book[3] }}</td>
+                <td>{{ book[4] }}</td>
+                <td>
+                    <a class="btn btn-info" href="{{ url_for('more_info', bookId=book[0]) }}">Mehr Info</a>
+                    <a class="btn btn-danger" href="{{ url_for('delete_book', bookId=book[0]) }}">L&ouml;schen</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
+        Buch hinzufügen
+    </button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="addBookModal" tabindex="1" aria-labelledby="addBookModalLabel" aria-hidden="true">
+        <div class="modal-dialog bg-dark">
+            <div class="modal-content bg-dark">
+                <div class="modal-header bg-dark">
+                    <h2>Neues Buch hinzufügen:</h2>
+                </div>
+                <div class="modal-content bg-dark p-3">
+                    <form action="{{ url_for('add_book') }}" method="post">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titel</label>
+                            <input type="text" class="form-control" id="title" name="title">
+                        </div>
+                        <div class="mb-3">
+                            <label for="author" class="form-label">Autor</label>
+                            <input type="text" class="form-control" id="author" name="author">
+                        </div>
+                        <div class="mb-3">
+                            <label for="genre" class="form-label">Genre</label>
+                            <input type="text" class="form-control" id="genre" name="genre">
+                        </div>
+                        <div class="mb-3">
+                            <label for="year" class="form-label">Jahr</label>
+                            <input type="date" class="form-control" id="year" name="year">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Beschreibung</label>
+                            <textarea class="form-control" id="description" name="description"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

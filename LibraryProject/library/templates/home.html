@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}
+Home - Library (EA)
+{% endblock %}
+
+{% block content %}
+<div class="container bg-dark text-white my-5 p-5 rounded">
+    <h1>Willkommen in deiner Bibliothek, {{ benutzername }}!</h1>
+    <p>Das hier ist ein ganz simples Managementsystem für deine ganz persönliche Bibliothek!</p>
+    {% if benutzername == "Guest" %}
+        <p>Bitte logge dich ein, um deine Bücher zu sehen.</p>
+    {% else %}
+        <p>Nutze den Menüpunkt "Bibliothek", um eine Auflistung deiner Einträge zu erhalten</p>
+    {% endif %}
+</div>
+{% endblock %}

