@@ -12,9 +12,10 @@ More Info - Library (EA)
     <p>Genre: {{ book[3] }}</p>
     <p>Jahr: {{ book[4] }}</p>
     <p>Beschreibung:</p>
-    {% autoescape false %}
+    {% autoescape true %}
     {{ book[6] }}
     {% endautoescape %}
+    <br>
     <a class="btn btn-primary" href="{{ url_for('library') }}">Zurück zur Bibliothek</a>
 </div>
 {% endblock %}

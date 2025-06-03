@@ -2,6 +2,8 @@ from library import app, db
 from flask import render_template, request, redirect, url_for
 from sqlalchemy import text
 
+loginAttempts = {}
+
 @app.route('/')
 def home():
     benutzername = get_benutzername(request)
@@ -11,16 +13,27 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        if request.remote_addr in loginAttempts:
+            loginAttempts[request.remote_addr] += 1
+        else:
+            loginAttempts[request.remote_addr] = 1
+        
+        if loginAttempts[request.remote_addr] > 3:
+            print(f"Too many login attempts from {request.remote_addr}. Blocking further attempts.")
+            return render_template('login.html', error="Too many login attempts. Please try again later."), 429
         benutzername = request.form['username']
         password = request.form['password']
         # Here you would typically check the benutzername and password against a database
         print(f"Recieved login request for {benutzername} with password {password}")
 
-        query = f"SELECT * FROM benutzer WHERE benutzername='{benutzername}' AND passwort='{password}'"
-        result = db.session.execute(text(query)).fetchall()
+        query = f"SELECT * FROM benutzer WHERE benutzername=:p1 AND passwort=:p2"
+        params = {"p1": benutzername, "p2": password}
+        result = db.session.execute(text(query), params).fetchall()
         print(f"Query result: {result}")
         if len(result) == 1:
             # Assuming the user is authenticated successfully
+            if request.remote_addr in loginAttempts:
+                del loginAttempts[request.remote_addr]
             resp = redirect(url_for('home'))
             resp.set_cookie('benutzername', result[0][1])  # Set a cookie with the benutzername
             resp.set_cookie('benutzerId', str(result[0][0]))  # Set a cookie with the benutzerId
@@ -32,7 +45,7 @@ def login():
             return resp
 
         
-        return render_template('login.html'), 400
+        return render_template('login.html', error="Wrong password. Try again."), 400
     
     # If the request method is GET, just render the login page
     return render_template('login.html'), 200
@@ -45,14 +58,16 @@ def register():
         # Here you would typically save the new user to a database
         print(f"Recieved registration request for {benutzername} with password {password}")
 
-        query = f"SELECT * FROM benutzer WHERE benutzername='{benutzername}'"
-        result = db.session.execute(text(query)).fetchall()
+        query = f"SELECT * FROM benutzer WHERE benutzername=:p1"
+        params = {"p1": benutzername}
+        result = db.session.execute(text(query), params).fetchall()
         print(f"Query result: {result}")
 
         if len(result) == 0:
             # Assuming the user is registered successfully
-            insert_query = f"INSERT INTO benutzer (benutzername, passwort) VALUES ('{benutzername}', '{password}')"
-            db.session.execute(text(insert_query))
+            insert_query = f"INSERT INTO benutzer (benutzername, passwort) VALUES (:p1, :p2)"
+            params = {"p1": benutzername, "p2": password}
+            db.session.execute(text(insert_query), params)
             db.session.commit()
             return redirect(url_for('login'))
         
@@ -87,8 +102,9 @@ def more_info():
     benutzername = get_benutzername(request)
     buchid = request.args.get('bookId')
     
-    query = f"SELECT * FROM buch WHERE buchid = {buchid}"
-    result = db.session.execute(text(query)).fetchall()
+    query = f"SELECT * FROM buch WHERE buchid = :p1"
+    params = {"p1": buchid}
+    result = db.session.execute(text(query), params).fetchall()
     print(f"Query result: {result}")
 
     if len(result) == 0:
@@ -113,8 +129,16 @@ def key(keys):
 
 @app.route('/addBook', methods=['POST'])
 def add_book():
-    query = f"INSERT INTO buch (titel, author, jahr, beschreibung, genre, benutzerId) VALUES ('{request.form['title']}', '{request.form['author']}', '{request.form['year']}', '{request.form['description']}', '{request.form['genre']}', '{request.cookies.get('benutzerId')}')"
-    result = db.session.execute(text(query))
+    query = f"INSERT INTO buch (titel, author, jahr, beschreibung, genre, benutzerId) VALUES (:p1, :p2, :p3, :p4, :p5, :p6)"
+    params = {
+        "p1": request.form['title'], 
+        "p2": request.form['author'], 
+        "p3": request.form['year'], 
+        "p4": request.form['description'], 
+        "p5": request.form['genre'], 
+        "p6": request.cookies.get('benutzerId')
+    }
+    result = db.session.execute(text(query), params)
     db.session.commit()
     print(f"Query result: {result}")
     print(f"Recieved request to add book with title {request.form['title']} and author {request.form['author']}")
@@ -123,8 +147,9 @@ def add_book():
 
 @app.route('/deleteBook', methods=['GET'])
 def delete_book():
-    query = f"DELETE FROM buch WHERE buchid = {request.args.get('bookId')}"
-    db.session.execute(text(query))
+    query = f"DELETE FROM buch WHERE buchid = :p1"
+    params = {"p1": request.args.get('bookId')}
+    db.session.execute(text(query), params)
     db.session.commit()
     print(f"Recieved request to delete book with id {request.args}")
     return redirect(url_for('library'))

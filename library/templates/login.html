@@ -8,6 +8,11 @@ Login - Library (EA)
     <h1>Login</h1>
     <form method="POST" action="{{ url_for('login') }}">
         <div class="mb-3">
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
             <label for="username" class="form-label">Username</label>
             <input type="text" class="form-control" id="username" name="username" required>
         </div>
