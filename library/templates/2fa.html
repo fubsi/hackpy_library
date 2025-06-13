@@ -13,6 +13,10 @@
                 {{ error }}
             </div>
             {% endif %}
+            <label for="2fa_benutzername" class="form-label">Benutzername</label>
+            <input type="text" class="form-control" id="2fa_benutzername" name="2fa_benutzername" value="{{ benutzername }}" readonly required>
+            <label for="2fa_benutzerId" class="form-label">ID</label>
+            <input type="text" class="form-control" id="2fa_benutzerId" name="2fa_benutzerId" value="{{ benutzerId }}" readonly required>
             <label for="twoFA" class="form-label">2FA-Code</label>
             <input type="text" class="form-control" id="twoFA" name="twoFA" required>
         </div>

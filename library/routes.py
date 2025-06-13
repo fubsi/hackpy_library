@@ -1,5 +1,5 @@
-from library import app, db
-from flask import render_template, request, redirect, url_for
+from library import app, db, totp
+from flask import render_template, request, redirect, url_for, session
 from sqlalchemy import text
 
 loginAttempts = {}
@@ -34,21 +34,42 @@ def login():
             # Assuming the user is authenticated successfully
             if request.remote_addr in loginAttempts:
                 del loginAttempts[request.remote_addr]
-            resp = redirect(url_for('home'))
-            resp.set_cookie('benutzername', result[0][1])  # Set a cookie with the benutzername
-            resp.set_cookie('benutzerId', str(result[0][0]))  # Set a cookie with the benutzerId
+            resp = render_template('2fa.html', benutzername=result[0][1], benutzerId=result[0][0])
+            # resp.set_cookie('benutzername', result[0][1])  # Set a cookie with the benutzername
+            # resp.set_cookie('benutzerId', str(result[0][0]))  # Set a cookie with the benutzerId
             return resp
-        if len(result) > 1:
-            resp = redirect(url_for('home'))
-            print(f"{str(result)}")
-            resp.set_cookie('benutzername', str(result))
-            return resp
+        # if len(result) > 1:
+        #     resp = redirect(url_for('home'))
+        #     print(f"{str(result)}")
+        #     resp.set_cookie('benutzername', str(result))
+        #     return resp
 
         
         return render_template('login.html', error="Wrong password. Try again."), 400
     
     # If the request method is GET, just render the login page
-    return render_template('login.html'), 200
+    return render_template('login.html', benutzername=get_benutzername(request)), 200
+
+@app.route('/2fa', methods=['POST'])
+def twoFA():
+    if request.method == 'POST':
+        benutzername = request.form['2fa_benutzername']
+        benutzerId = request.form['2fa_benutzerId']
+        token = request.form['twoFA']
+
+        # Validate the TOTP token
+        if totp.verify(token):      # If not worky, try syncing windows time again
+            resp = redirect(url_for('library'))
+            # resp.set_cookie('benutzername', benutzername)
+            # resp.set_cookie('benutzerId', str(benutzerId))
+            session['benutzername'] = benutzername
+            session['benutzerId'] = str(benutzerId)
+            return resp
+        else:
+            print(f"Invalid 2FA token for user {benutzername}")
+            return render_template('2fa.html', error="Invalid 2FA token. Please try again.",benutzername=benutzername, benutzerId=benutzerId), 400
+    
+    return render_template('2fa.html', benutzername=request.args.get('benutzername'), benutzerId=request.args.get('benutzerId')), 200
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -79,8 +100,10 @@ def register():
 @app.route('/logout')
 def logout():
     resp = redirect(url_for('home'))
-    resp.set_cookie('benutzerId', '', expires=0)  # Clear the cookie
-    resp.set_cookie('benutzername', '', expires=0)  # Clear the cookie
+    # resp.set_cookie('benutzerId', '', expires=0)  # Clear the cookie
+    # resp.set_cookie('benutzername', '', expires=0)  # Clear the cookie
+    session.pop('benutzername', None)  # Clear the session
+    session.pop('benutzerId', None)
     return resp
 
 @app.route('/library')
@@ -136,7 +159,7 @@ def add_book():
         "p3": request.form['year'], 
         "p4": request.form['description'], 
         "p5": request.form['genre'], 
-        "p6": request.cookies.get('benutzerId')
+        "p6": session['benutzerId']
     }
     result = db.session.execute(text(query), params)
     db.session.commit()
@@ -155,7 +178,7 @@ def delete_book():
     return redirect(url_for('library'))
 
 def get_benutzername(request):
-    benutzername = request.cookies.get('benutzername')
+    benutzername = session['benutzername'] if 'benutzername' in session else None
     print(f"Recieved request for library page with benutzername {benutzername}")
     if benutzername is None:
         return 'Guest'
